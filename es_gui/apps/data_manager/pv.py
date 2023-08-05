@@ -125,13 +125,13 @@ class PVwattsSearchScreen(Screen):
 
             # Form query.
             api_query = URL_PVWATTS
-            query_segs = []
-            for k, v in pv_params.items():
-                query_segs.append('{key}={value}'.format(key=k, value=v))
-            
+            query_segs = [
+                '{key}={value}'.format(key=k, value=v)
+                for k, v in pv_params.items()
+            ]
             api_query += '&'.join(query_segs)
             # print(api_query)
-            
+
             try:
                 self._query_api(api_query)
             except requests.ConnectionError:
@@ -197,18 +197,17 @@ class PVwattsSearchScreen(Screen):
             if not os.path.exists(destination_file):
                 with open(destination_file, 'w') as outfile:
                     json.dump(request_content, outfile)
-                
+
                 logging.info('PVProfileDM: Profile successfully saved.')
-                
+
                 popup = WarningPopup()
                 popup.title = 'Success!'
                 popup.popup_text.text = 'PV profile successfully saved.'
-                popup.open()
             else:
                 # File already exists with same name.
                 popup = WarningPopup()
                 popup.popup_text.text = 'A PV profile with the provided name already exists. Please specify a new name.'
-                popup.open()
+            popup.open()
         finally:
             self.save_button.disabled = False
     
@@ -261,14 +260,14 @@ class PVWattsSearchParameterWidget(GridLayout):
         param_set = {}
 
         for row in self.children:
-            attr_name = row.desc['attr name']
-
             if not row.text_input.text:
                 attr_val = row.text_input.hint_text
             else:
                 attr_val = row.text_input.text
-            
+
             if attr_val:
+                attr_name = row.desc['attr name']
+
                 param_set[attr_name] = attr_val
             else:
                 # Skip if values is None.

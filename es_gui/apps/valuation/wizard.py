@@ -145,9 +145,9 @@ class ValuationWizardISOSelect(Screen):
     def on_iso(self, instance, value):
         logging.info('ValuationWizard: ISO changed to {0}.'.format(value))
 
-        self.has_selection = True if \
-            any([button.state == 'down' for button in self.iso_select.children]) \
-            else False
+        self.has_selection = any(
+            button.state == 'down' for button in self.iso_select.children
+        )
 
     def on_has_selection(self, instance, value):
         # Enables/disables the next button if an ISO is selected.
@@ -345,9 +345,9 @@ class ValuationWizardRevenueSelect(Screen):
     def on_market_formulation(self, instance, value):
         logging.info('ValuationWizard: Market formulation changed to {0}.'.format(value))
 
-        self.has_selection = True if \
-            any([button.state == 'down' for button in self.rev_select.children]) \
-            else False
+        self.has_selection = any(
+            button.state == 'down' for button in self.rev_select.children
+        )
 
     def on_has_selection(self, instance, value):
         # Enables the next button if at least one revenue stream is selected.
@@ -477,9 +477,9 @@ class ValuationWizardDataSelect(Screen):
 
         self.selected_data = value.historical_data
 
-        self.has_selection = True if \
-            any([button.state == 'down' for button in self.data_select.children]) \
-            else False
+        self.has_selection = any(
+            button.state == 'down' for button in self.data_select.children
+        )
 
     def on_has_selection(self, instance, value):
         # Enables the next button if a data set is selected.
@@ -564,28 +564,29 @@ class WizardDeviceParameterRow(GridLayout):
 
     def _validate_input(self):
         """Validate entry when unfocusing text input."""
-        if not self.text_input.focus:
-            try:
-                input_value = float(self.text_input.text)
-            except ValueError:
-                # No text entered.
-                input_value = self.param_slider.value
-                self.text_input.text = str(input_value)
+        if self.text_input.focus:
+            return
+        try:
+            input_value = float(self.text_input.text)
+        except ValueError:
+            # No text entered.
+            input_value = self.param_slider.value
+            self.text_input.text = str(input_value)
 
-                return
+            return
 
-            if input_value > self.param_max or input_value < self.param_min:
-                # If input value is out of range.
-                popup = WarningPopup()
-                popup.popup_text.text = '{param_name} must be between {param_min} and {param_max} (got {input_val}).'.format(param_name=self.name.text[:1].upper() + self.name.text[1:], param_min=self.param_min, param_max=self.param_max, input_val=input_value)
-                popup.open()
+        if input_value > self.param_max or input_value < self.param_min:
+            # If input value is out of range.
+            popup = WarningPopup()
+            popup.popup_text.text = '{param_name} must be between {param_min} and {param_max} (got {input_val}).'.format(param_name=self.name.text[:1].upper() + self.name.text[1:], param_min=self.param_min, param_max=self.param_max, input_val=input_value)
+            popup.open()
 
-                input_value = self.param_slider.value
-                self.text_input.text = str(input_value)
-            else:
-                # Set slider value to input value.
-                anim = Animation(transition='out_expo', duration=SLIDER_DUR, value=input_value)
-                anim.start(self.param_slider)
+            input_value = self.param_slider.value
+            self.text_input.text = str(input_value)
+        else:
+            # Set slider value to input value.
+            anim = Animation(transition='out_expo', duration=SLIDER_DUR, value=input_value)
+            anim.start(self.param_slider)
 
 
 class WizardDeviceParameterWidget(GridLayout):
@@ -661,9 +662,9 @@ class ValuationWizardDeviceSelect(Screen):
     def on_device(self, instance, value):
         logging.info('ValuationWizard: Energy storage device changed to {0}.'.format(value))
 
-        self.has_selection = True if \
-            any([button.state == 'down' for button in self.device_select.children]) \
-            else False
+        self.has_selection = any(
+            button.state == 'down' for button in self.device_select.children
+        )
 
     def on_has_selection(self, instance, value):
         # Enables the next button if a device is selected.
@@ -751,10 +752,6 @@ class AboutSelectionSummary(ModalView):
             # self.img_abt_selsum.source = os.path.join('es_gui', 'resources', 'images', 'xMISOlogo.png')
             self.lab_abt_selsum.text = 'CAISO description TBW.'
 
-        else:
-            # self.img_abt_selsum.source = os.path.join('es_gui', 'resources', 'images', 'SNLlogo.png')
-            pass
-
 
 class ValuationWizardSelectionSummary(Screen):
     """The selection summary screen for the valuation wizard."""
@@ -787,13 +784,14 @@ class ValuationWizardSelectionSummary(Screen):
         # extract selections from each screen
         summary_bubble = WizardSummaryBubble(size_hint=(1, 1))
 
-        selections = {}
-        selections['iso'] = self.manager.get_screen('rev_stream_select').iso
+        selections = {'iso': self.manager.get_screen('rev_stream_select').iso}
         selections['node'] = self.manager.get_screen('node_select').node['name']
         selections['nodeid'] = self.manager.get_screen('node_select').node['nodeid']
         selections['rev_streams'] = self.manager.get_screen('rev_stream_select').market_formulation
         selections['selected_data'] = self.manager.get_screen('data_select').selected_data
-        selections['device'] = [x for x in self.manager.get_screen('device_select').param_widget.children]
+        selections['device'] = list(
+            self.manager.get_screen('device_select').param_widget.children
+        )
 
         self.wiz_selections = selections  # assign to DictProperty of screen
 
@@ -820,12 +818,7 @@ class ValuationWizardSelectionSummary(Screen):
         buttons_dev_sel = self.manager.get_screen('device_select').device_select.children
         but_press_dev_sel = [x.text for x in buttons_dev_sel if x.state == "down"]
 
-        if not but_press_dev_sel:
-            # print("empty list")
-            but_press_dev_sel = "-"
-        else:
-            but_press_dev_sel = but_press_dev_sel[0]# print("NOT empty list")
-
+        but_press_dev_sel = "-" if not but_press_dev_sel else but_press_dev_sel[0]
         #print(but_press_dev_sel[0])
 
         isotextSW = '[u][ref={ref_in}]{textisosel} [/ref][/u]'.format(ref_in=iso, textisosel=iso)
@@ -834,21 +827,21 @@ class ValuationWizardSelectionSummary(Screen):
         month_end = calendar.month_name[int(self.wiz_selections['selected_data'][-1]['month'])]
         year_end = self.wiz_selections['selected_data'][-1]['year']
 
-        self.isolabel.text = '[b]Market Area:[/b] ' + isotextSW
+        self.isolabel.text = f'[b]Market Area:[/b] {isotextSW}'
         self.isolabel.markup = True
         self.isolabel.bind(on_ref_press=self.OpenAbSelSum)
 
-        self.pcnodelabel.text = "[b]Pricing Node:[/b] " + node + " (id: " + str(nodeid) + ")"
+        self.pcnodelabel.text = f"[b]Pricing Node:[/b] {node} (id: {str(nodeid)})"
         self.pcnodelabel.markup = True
 
         histdattext = '{m_i} {y_i} to {m_e} {y_e}'.format(m_i=month_ini, y_i=year_ini, m_e=month_end, y_e=year_end)
-        self.histdatlabel.text = "[b]Dates Analyzed: [/b]" + histdattext
+        self.histdatlabel.text = f"[b]Dates Analyzed: [/b]{histdattext}"
         self.histdatlabel.markup = True
 
-        self.revstreamlabel.text = "[b]Revenue Streams: [/b]" + rev_streams
+        self.revstreamlabel.text = f"[b]Revenue Streams: [/b]{rev_streams}"
         self.revstreamlabel.markup = True
 
-        self.esdevlabel.text = "[b]ES Device: [/b]" + but_press_dev_sel + '\n' + device
+        self.esdevlabel.text = f"[b]ES Device: [/b]{but_press_dev_sel}" + '\n' + device
         self.esdevlabel.markup = True
 
         # print(rev_streams)
@@ -941,14 +934,18 @@ class ValuationWizardExecute(Screen):
         hist_data = wiz_selections['selected_data']
         device = wiz_selections['device']
 
-        handler_requests = {}
-        handler_requests['iso'] = iso
-        handler_requests['market type'] = rev_streams  # need this as string, not list
-        handler_requests['months'] = [(entry['month'], entry['year']) for entry in hist_data]
-        handler_requests['node id'] = nodeid
-        handler_requests['param set'] = [{param.desc['attr name']: param.param_slider.value
-                                         for param in device}]
-
+        handler_requests = {
+            'iso': iso,
+            'market type': rev_streams,
+            'months': [(entry['month'], entry['year']) for entry in hist_data],
+            'node id': nodeid,
+            'param set': [
+                {
+                    param.desc['attr name']: param.param_slider.value
+                    for param in device
+                }
+            ],
+        }
         # Send requests to ValOp handler.
         valop_handler = valuation_home.handler
         valop_handler.solver_name = App.get_running_app().config.get('optimization', 'solver')

@@ -573,32 +573,14 @@ class ValuationOptimizer(optimizer.Optimizer):
             rev_arb = np.cumsum(np.array([m.price_electricity[t]*(m.q_d[t].value - m.q_r[t].value) for t in m.time]))
             rev_reg = np.cumsum(np.array([m.q_reg[t].value*m.perf_score[t]*(m.mi_mult[t]*m.price_reg_service[t] + m.price_regulation[t]) for t in m.time]))
 
-            revenue = rev_arb + rev_reg
-
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
         elif self.market_type == 'miso_pfp':
             rev_arb = np.cumsum(np.array([m.price_electricity[t]*(m.q_d[t].value - m.q_r[t].value) for t in m.time]))
             rev_reg = np.cumsum(np.array([(1 + m.Make_whole)*m.perf_score[t]*m.price_regulation[t]*m.q_reg[t].value for t in m.time]))
 
-            revenue = rev_arb + rev_reg
-
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
-        #//////////////////////////////////////////////////#
         elif self.market_type == 'isone_pfp':
             rev_arb = np.cumsum(np.array([m.price_electricity[t]*(m.q_d[t].value - m.q_r[t].value) for t in m.time]))
             rev_reg = np.cumsum(np.array([(m.mi_mult[t] * m.price_reg_service[t] + m.price_regulation[t]) * m.perf_score[t]*m.q_reg[t].value for t in m.time]))
 
-            revenue = rev_arb + rev_reg
-
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
-        #//////////////////////////////////////////////////#
-        #######################################################################################################################
         elif self.market_type == 'nyiso_pfp':
             rev_arb = np.cumsum(np.array([m.price_electricity[t]*(m.q_d[t].value - m.q_r[t].value) for t in m.time]))
             rev_reg = np.cumsum(np.array([m.q_reg[t].value* m.price_regulation[t] * (1 - 1.1*(1 - m.perf_score[t]))
@@ -606,13 +588,6 @@ class ValuationOptimizer(optimizer.Optimizer):
                                           - m.q_reg[t].value * m.fraction_reg_down[t])
                                           for t in m.time]))
 
-            revenue = rev_arb + rev_reg
-
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
-        #######################################################################################################################
-        #######################################################################################################################
         elif self.market_type == 'spp_pfp':
             # TODO: copied from 'ercot_arbreg' -make sure is correct for this market
             # rev_arb = np.cumsum(np.array([m.price_electricity[t]*(m.q_d[t].value - m.q_r[t].value
@@ -626,12 +601,6 @@ class ValuationOptimizer(optimizer.Optimizer):
                                           - m.q_rd[t].value * m.fraction_reg_down[t])
                                           for t in m.time]))
 
-            revenue = rev_arb + rev_reg
-
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
-        #######################################################################################################################
         elif self.market_type == 'caiso_pfp':
             # rev_arb = np.cumsum(np.array([m.price_electricity[t]*(m.q_d[t].value - m.q_r[t].value
             #                                                       + m.q_ru[t].value*m.fraction_reg_up[t]
@@ -649,12 +618,6 @@ class ValuationOptimizer(optimizer.Optimizer):
                                           - m.q_rd[t].value * m.fraction_reg_down[t])
                                           for t in m.time]))
 
-            revenue = rev_arb + rev_reg
-
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
-        #######################################################################################################################
         elif self.market_type == 'ercot_arbreg':
             # rev_arb = np.cumsum(np.array([m.price_electricity[t]*(m.q_d[t].value - m.q_r[t].value
             #                                                       + m.q_ru[t].value*m.fraction_reg_up[t]
@@ -668,28 +631,22 @@ class ValuationOptimizer(optimizer.Optimizer):
                                           - m.q_rd[t].value * m.fraction_reg_down[t])
                                           for t in m.time]))
 
-            revenue = rev_arb + rev_reg
-
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
         else:
             rev_arb = np.cumsum(np.array([m.price_electricity[t] * (m.q_d[t].value - m.q_r[t].value)
                                           for t in m.time]))
-            rev_reg = np.cumsum(np.array([0 for t in m.time]))
+            rev_reg = np.cumsum(np.array([0 for _ in m.time]))
 
-            revenue = rev_arb + rev_reg
+        revenue = rev_arb + rev_reg
 
-            run_results['rev_arb'] = rev_arb
-            run_results['rev_reg'] = rev_reg
-            run_results['revenue'] = revenue
-
+        run_results['rev_arb'] = rev_arb
+        run_results['rev_reg'] = rev_reg
+        run_results['revenue'] = revenue
         try:
             self.gross_revenue = revenue[-1]
         except IndexError:
             # Revenue is of length-0, likely due to no price_electricity array-like being given before solving.
             self.gross_revenue = 0
-        
+
         self.results = pd.DataFrame(run_results)
 
     def get_results(self):

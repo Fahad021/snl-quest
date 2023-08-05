@@ -344,8 +344,7 @@ def draw_if_interactive():
     '''Handle whether or not the backend is in interactive mode or not.
     '''
     if matplotlib.is_interactive():
-        figManager = Gcf.get_active()
-        if figManager:
+        if figManager := Gcf.get_active():
             figManager.canvas.draw_idle()
 
 
@@ -431,8 +430,7 @@ class RendererKivy(RendererBase):
         collides = self.collides_with_existent_stencil(x, y)
         if collides > -1:
             return collides
-        new_bounds = gc.get_clip_rectangle()
-        if new_bounds:
+        if new_bounds := gc.get_clip_rectangle():
             x = self.widget.x + int(new_bounds.bounds[0])
             y = self.widget.y + int(new_bounds.bounds[1])
             w = int(new_bounds.bounds[2])
@@ -466,7 +464,7 @@ class RendererKivy(RendererBase):
         # check whether an optimization is needed by calculating the cost of
         # generating and use a path with the cost of emitting a path in-line.
         should_do_optimization = \
-            len_path + uses_per_path + 5 < len_path * uses_per_path
+                len_path + uses_per_path + 5 < len_path * uses_per_path
         if not should_do_optimization:
             return RendererBase.draw_path_collection(
                 self, gc, master_transform, paths, all_transforms,
@@ -475,13 +473,14 @@ class RendererKivy(RendererBase):
                 offset_position)
         # Generate an array of unique paths with the respective transformations
         path_codes = []
-        for i, (path, transform) in enumerate(self._iter_collection_raw_paths(
-            master_transform, paths, all_transforms)):
+        for path, transform in self._iter_collection_raw_paths(
+            master_transform, paths, all_transforms):
             transform = Affine2D(transform.get_matrix()).scale(1.0, -1.0)
-            if _mpl_ge_2_0:
-                polygons = path.to_polygons(transform, closed_only=False)
-            else:
-                polygons = path.to_polygons(transform)
+            polygons = (
+                path.to_polygons(transform, closed_only=False)
+                if _mpl_ge_2_0
+                else path.to_polygons(transform)
+            )
             path_codes.append(polygons)
         # Apply the styles and rgbFace to each one of the raw paths from
         # the list. Additionally a transformation is being applied to
@@ -502,12 +501,14 @@ class RendererKivy(RendererBase):
         '''Check all the clipareas and returns the index of the clip area that
            contains this point. The point x, y is given in kivy coordinates.
         '''
-        idx = -1
-        for cliparea in self.clip_rectangles:
-            idx += 1
-            if self.contains(cliparea, x, y):
-                return idx
-        return -1
+        return next(
+            (
+                idx
+                for idx, cliparea in enumerate(self.clip_rectangles)
+                if self.contains(cliparea, x, y)
+            ),
+            -1,
+        )
 
     def get_path_instructions(self, gc, polygons, closed=False, rgbFace=None):
         '''With a graphics context and a set of polygons it returns a list
@@ -547,11 +548,11 @@ class RendererKivy(RendererBase):
             if len(polygons.meshes) != 0:
                 instruction_group.add(Color(*rgbFace))
                 for vertices, indices in polygons.meshes:
-                    instruction_group.add(Mesh(
-                        vertices=vertices,
-                        indices=indices,
-                        mode=str("triangle_fan")
-                    ))
+                    instruction_group.add(
+                        Mesh(
+                            vertices=vertices, indices=indices, mode="triangle_fan"
+                        )
+                    )
         instruction_group.add(Color(*gc.get_rgb()))
         if _mpl_ge_1_5 and (not _mpl_ge_2_0) and closed:
             points_poly_line = points_line[:-2]
@@ -656,14 +657,14 @@ class RendererKivy(RendererBase):
         if ismath:
             self.draw_mathtext(gc, x, y, s, prop, angle)
         else:
-            font = resource_find(prop.get_name() + ".ttf")
+            font = resource_find(f"{prop.get_name()}.ttf")
             color = gc.get_rgb()
             if font is None:
                 plot_text = CoreLabel(font_size=prop.get_size_in_points(), color=color)
             else:
                 plot_text = CoreLabel(font_size=prop.get_size_in_points(),
                                 font_name=prop.get_name(), color=color)
-            plot_text.text = six.text_type("{}".format(s))
+            plot_text.text = six.text_type(f"{s}")
             if prop.get_style() == 'italic':
                 plot_text.italic = True
             if self.weight_as_number(prop.get_weight()) > 500:
@@ -733,7 +734,7 @@ class RendererKivy(RendererBase):
             simplify=False)
         # get a string representation of the graphics context and rgbFace.
         style = str(gc._get_style_dict(rgbFace))
-        dictkey = (path_data, str(style))
+        dictkey = path_data, style
         # check whether this marker has been created before.
         list_instructions = self._markers.get(dictkey)
         # creating a list of instructions for the specific marker.
@@ -759,10 +760,7 @@ class RendererKivy(RendererBase):
 
     def _convert_path(self, path, transform=None, clip=None, simplify=None,
                       sketch=None):
-        if clip:
-            clip = (0.0, 0.0, self.width, self.height)
-        else:
-            clip = None
+        clip = (0.0, 0.0, self.width, self.height) if clip else None
         if _mpl_ge_1_5:
             return _path.convert_to_string(
                 path, transform, clip, simplify, sketch, 6,
@@ -785,13 +783,13 @@ class RendererKivy(RendererBase):
             w = ftimage.get_width()
             h = ftimage.get_height()
             return w, h, depth
-        font = resource_find(prop.get_name() + ".ttf")
+        font = resource_find(f"{prop.get_name()}.ttf")
         if font is None:
             plot_text = CoreLabel(font_size=prop.get_size_in_points())
         else:
             plot_text = CoreLabel(font_size=prop.get_size_in_points(),
                             font_name=prop.get_name())
-        plot_text.text = six.text_type("{}".format(s))
+        plot_text.text = six.text_type(f"{s}")
         plot_text.refresh()
         return plot_text.texture.size[0], plot_text.texture.size[1], 1
 
@@ -809,7 +807,6 @@ class RendererKivy(RendererBase):
         # Return if number
         if isinstance(weight, numbers.Number):
             return weight
-        # else use the mapping of matplotlib 2.2
         elif weight == 'ultralight':
             return 100
         elif weight == 'light':
@@ -839,7 +836,7 @@ class RendererKivy(RendererBase):
         elif weight == 'black':
             return 900
         else:
-            raise ValueError('weight ' + weight + ' not valid')
+            raise ValueError(f'weight {weight} not valid')
 
 
 class NavigationToolbar2Kivy(NavigationToolbar2):
@@ -910,7 +907,7 @@ class NavigationToolbar2Kivy(NavigationToolbar2):
             if text is None:
                 actionview.add_widget(ActionSeparator())
                 continue
-            fname = os.path.join(basedir, image_file + '.png')
+            fname = os.path.join(basedir, f'{image_file}.png')
             if text in ['Pan', 'Zoom']:
                 action_button = ActionToggleButton(text=text, icon=fname,
                                                    group=id_group)
@@ -1034,8 +1031,7 @@ class GraphicsContextKivy(GraphicsContextBase, object):
             attrib['line-dasharray'] = ','.join(['%f' % val for val in seq])
             attrib['line-dashoffset'] = six.text_type(float(offset))
 
-        linewidth = self.get_linewidth()
-        if linewidth:
+        if linewidth := self.get_linewidth():
             rgb = self.get_rgb()
             attrib['line'] = str(rgb)
             if not forced_alpha and rgb[3] != 1.0:
@@ -1124,9 +1120,8 @@ class FigureCanvasKivy(FocusBehavior, Widget, FigureCanvasBase):
                                         dblclick=False, guiEvent=None)
             if self.entered_figure:
                 self.enter_notify_event(guiEvent=None, xy=None)
-        else:
-            if not self.entered_figure:
-                self.leave_notify_event(guiEvent=None)
+        elif not self.entered_figure:
+            self.leave_notify_event(guiEvent=None)
         return False
 
     def on_touch_move(self, touch):
@@ -1168,14 +1163,13 @@ class FigureCanvasKivy(FocusBehavior, Widget, FigureCanvasBase):
         newcoord = self.to_widget(touch.x, touch.y, relative=True)
         x = newcoord[0]
         y = newcoord[1]
-        if touch.grab_current is self:
-            if 'button' in touch.profile and touch.button in ("scrollup", "scrolldown",):
-                self.scroll_event(x, y, 5, guiEvent=None)
-            else:
-                self.button_release_event(x, y, self.get_mouse_button(touch), guiEvent=None)
-            touch.ungrab(self)
-        else:
+        if touch.grab_current is not self:
             return super(FigureCanvasKivy, self).on_touch_up(touch)
+        if 'button' in touch.profile and touch.button in ("scrollup", "scrolldown",):
+            self.scroll_event(x, y, 5, guiEvent=None)
+        else:
+            self.button_release_event(x, y, self.get_mouse_button(touch), guiEvent=None)
+        touch.ungrab(self)
         return False
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
@@ -1302,11 +1296,11 @@ class FigureManagerKivy(FigureManagerBase):
             Window.size = w, h
 
     def _get_toolbar(self):
-        if rcParams['toolbar'] == 'toolbar2':
-            toolbar = NavigationToolbar2Kivy(self.canvas)
-        else:
-            toolbar = None
-        return toolbar
+        return (
+            NavigationToolbar2Kivy(self.canvas)
+            if rcParams['toolbar'] == 'toolbar2'
+            else None
+        )
 
 '''Now just provide the standard names that backend.__init__ is expecting
 '''

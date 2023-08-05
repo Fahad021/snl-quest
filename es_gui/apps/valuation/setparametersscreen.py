@@ -72,14 +72,13 @@ class SetParametersScreen(Screen):
         iso_selected, market_formulation_selected, node_selected, year_selected, month_selected = data_screen.get_inputs()
         param_settings = params_screen.get_inputs()
 
-        requests = {'iso': iso_selected,
-                    'market type': market_formulation_selected,
-                    'months': [(month_selected, year_selected)],
-                    'node id': node_selected,
-                    'param set': param_settings
-                    }
-
-        return requests
+        return {
+            'iso': iso_selected,
+            'market type': market_formulation_selected,
+            'months': [(month_selected, year_selected)],
+            'node id': node_selected,
+            'param set': param_settings,
+        }
     
     def execute_single_run(self, *args):
         try:

@@ -111,8 +111,8 @@ class ChartScreen(Screen):
 
         pie_data = [
             [''.join(sample(ascii_letters, 12)), random(4), random()]
-            for x in range(5)
-            ]
+            for _ in range(5)
+        ]
 
         chart.draw_chart(pie_data, is_donut=is_donut)
 
@@ -122,7 +122,7 @@ class ChartScreen(Screen):
 
         pie_data = [
             [''.join(sample(ascii_letters, 12)), random(4), random()]
-            for x in range(4)
+            for _ in range(4)
         ]
         pie_data.append([''.join(sample(ascii_letters, 12)), random(4), random()])
 

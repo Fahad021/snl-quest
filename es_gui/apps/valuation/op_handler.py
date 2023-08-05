@@ -155,15 +155,16 @@ class ValuationOptimizerHandler:
         time_finished = datetime.now().strftime('%b %d, %Y %H:%M:%S')
         name = ' | '.join([time_finished, node_name, year, calendar.month_abbr[int(month)], repr(param_set)])
 
-        results_dict = {}
+        results_dict = {
+            'name': name,
+            'optimizer': op,
+            'iso': iso,
+            'market type': market_type,
+            'year': year,
+            'month': calendar.month_name[int(month)],
+            'node': node_name,
+        }
 
-        results_dict['name'] = name
-        results_dict['optimizer'] = op
-        results_dict['iso'] = iso
-        results_dict['market type'] = market_type
-        results_dict['year'] = year
-        results_dict['month'] = calendar.month_name[int(month)]
-        results_dict['node'] = node_name
         if param_set:
             results_dict['params'] = param_set
         results_dict['time'] = time_finished
@@ -175,9 +176,7 @@ class ValuationOptimizerHandler:
     
     def get_solved_ops(self):
         """Returns the list of solved Optimizer objects in reverse chronological order."""
-        return_list = reversed(self.solved_ops)
-
-        return return_list
+        return reversed(self.solved_ops)
 
 if __name__ == '__main__':
     with open('valuation_optimizer.log', 'w'):
@@ -185,7 +184,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(filename='valuation_optimizer.log', format='[%(levelname)s] %(asctime)s: %(message)s',
                         level=logging.INFO)
-    
+
     op = ValuationOptimizer()
 
     fpath = os.path.join('data', 'PJM')
@@ -195,11 +194,10 @@ if __name__ == '__main__':
 
     daLMP, mr, rega, regd, RegCCP, RegPCP = read_pjm_data(fpath,year,month,nodeid)
 
-    handler_requests = {}
-    handler_requests['iso'] = 'PJM'
-    handler_requests['market type'] = 'pjm_pfp'
-    handler_requests['months'] = [(month, year),]
-    handler_requests['node id'] = nodeid
-
-
+    handler_requests = {
+        'iso': 'PJM',
+        'market type': 'pjm_pfp',
+        'months': [(month, year)],
+        'node id': nodeid,
+    }
     results, gross_revenue = op.run()

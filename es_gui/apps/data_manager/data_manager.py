@@ -509,15 +509,12 @@ class DataManager(EventDispatcher):
                 if not year_dir_entry.name.startswith('.'):
                     year = year_dir_entry.name
                     year_dir = year_dir_entry.path
-                    ercot_spp_dir_struct[year] = []
-
-                    # TODO: Not all yearly files have every month of data... but opening them to look is costly.
-                    ercot_spp_dir_struct[year].extend([str(x+1).zfill(2) for x in range(0, 12)])
+                    ercot_spp_dir_struct[year] = [str(x+1).zfill(2) for x in range(0, 12)]
 
             for node in ercot_nodes.keys():
                 tmp_dir = copy.deepcopy(ercot_spp_dir_struct)
                 ercot_data_bank['SPP'][node] = tmp_dir
-        
+
         # CCP scan.
         if 'CCP' in os.listdir(ercot_root):
             ercot_data_bank['CCP'] = {}
@@ -533,7 +530,7 @@ class DataManager(EventDispatcher):
                     # Verify a file exists in the directory.
                     if os.listdir(year_dir):
                         ercot_data_bank['CCP'][year].extend([str(x+1).zfill(2) for x in range(0, 12)])
-        
+
         self.data_bank['valuation']['ERCOT'] = ercot_data_bank
     
     def _scan_nyiso_data_bank(self):
@@ -929,11 +926,8 @@ class DataManager(EventDispatcher):
         # Use the PJM pattern of reading data_bank node keys to generate the node_dict (key = value) if no CSV LUT exists.
         else:
             raise(DataManagerException('Invalid market_area given (got {0})'.format(market_area)))
-        
-        # Sort by name alphabetically before returning.
-        return_dict = collections.OrderedDict(sorted(node_dict.items(), key=lambda t: t[1]))
-        
-        return return_dict
+
+        return collections.OrderedDict(sorted(node_dict.items(), key=lambda t: t[1]))
     
     def get_valuation_revstreams(self, market_area, node):
         """Retrieves the available revenue streams for a given node in a given market_area based on downloaded data."""
@@ -951,9 +945,9 @@ class DataManager(EventDispatcher):
             if spp_data:
                 # Arbitrage is available.
                 rev_stream_dict['Arbitrage'] = rev_stream_defs['Arbitrage']
-            if spp_data and ccp_data:
-                # Arbitrage and regulation is available.
-                rev_stream_dict['Arbitrage and regulation'] = rev_stream_defs['Arbitrage and regulation']
+                if ccp_data:
+                    # Arbitrage and regulation is available.
+                    rev_stream_dict['Arbitrage and regulation'] = rev_stream_defs['Arbitrage and regulation']
         elif market_area == 'PJM':
             pjm_data_bank = self.data_bank['valuation']['PJM']
 
@@ -989,12 +983,9 @@ class DataManager(EventDispatcher):
             if lbmp_data:
                 # Arbitrage is available.
                 rev_stream_dict['Arbitrage'] = rev_stream_defs['Arbitrage']
-            if lbmp_data and asp_data:
-                # Arbitrage and regulation is available.
-                rev_stream_dict['Arbitrage and regulation'] = rev_stream_defs['Arbitrage and regulation']
-                # print("NYISO case data manager")
-                # print(rev_stream_dict)
-
+                if asp_data:
+                    # Arbitrage and regulation is available.
+                    rev_stream_dict['Arbitrage and regulation'] = rev_stream_defs['Arbitrage and regulation']
         elif market_area == 'ISONE':
             # print("ISONE case data manager 1")
             isone_data_bank = self.data_bank['valuation']['ISONE']
@@ -1037,7 +1028,7 @@ class DataManager(EventDispatcher):
                 rev_stream_dict['Arbitrage and regulation'] = rev_stream_defs['Arbitrage and regulation']
         else:
             raise(DataManagerException('Invalid market_area given (got {0})'.format(market_area)))
-            
+
         return rev_stream_dict
     
     def get_historical_datasets(self, market_area, node, rev_streams):
@@ -1050,10 +1041,9 @@ class DataManager(EventDispatcher):
             hist_dataset = [{'month': month, 'year': year} for month in month_list]
             hist_datasets_dict['{year}'.format(year=year)] = hist_dataset
 
-        # Sort before returning.
-        return_dict = collections.OrderedDict(sorted(hist_datasets_dict.items(), key=lambda t: int(t[0])))
-        
-        return return_dict
+        return collections.OrderedDict(
+            sorted(hist_datasets_dict.items(), key=lambda t: int(t[0]))
+        )
     
     def get_historical_data_options(self, market_area, node, rev_streams):
         """Retrieves the years of available historical data for a given node in a given market area using the given rev_streams."""
@@ -1071,10 +1061,9 @@ class DataManager(EventDispatcher):
                 for year, month_list in spp_data.items():
                     reg_month_list = reg_data.get(year, [])
 
-                    # Compute intersection of all data types.
-                    months_common = list(set(month_list).intersection(set(reg_month_list)))
-
-                    if months_common:
+                    if months_common := list(
+                        set(month_list).intersection(set(reg_month_list))
+                    ):
                         hist_data_options[year] = sorted(months_common)
             else:
                 hist_data_options = spp_data
@@ -1092,10 +1081,11 @@ class DataManager(EventDispatcher):
                     reg_month_list = reg_data.get(year, [])
                     mileage_month_list = mileage_data.get(year, [])
 
-                    # Compute intersection of all three data types.
-                    months_common = list(set(month_list).intersection(set(reg_month_list)).intersection(set(mileage_month_list)))
-
-                    if months_common:
+                    if months_common := list(
+                        set(month_list)
+                        .intersection(set(reg_month_list))
+                        .intersection(set(mileage_month_list))
+                    ):
                         hist_data_options[year] = sorted(months_common)
             else:
                 hist_data_options = lmp_data
@@ -1111,10 +1101,9 @@ class DataManager(EventDispatcher):
                 for year, month_list in lmp_data.items():
                     reg_month_list = reg_data.get(year, [])
 
-                    # Compute intersection of all data types.
-                    months_common = list(set(month_list).intersection(set(reg_month_list)))
-
-                    if months_common:
+                    if months_common := list(
+                        set(month_list).intersection(set(reg_month_list))
+                    ):
                         hist_data_options[year] = sorted(months_common)
             else:
                 hist_data_options = lmp_data
@@ -1130,10 +1119,9 @@ class DataManager(EventDispatcher):
                 for year, month_list in lbmp_data.items():
                     reg_month_list = reg_data.get(year, [])
 
-                    # Compute intersection of all data types.
-                    months_common = list(set(month_list).intersection(set(reg_month_list)))
-
-                    if months_common:
+                    if months_common := list(
+                        set(month_list).intersection(set(reg_month_list))
+                    ):
                         hist_data_options[year] = sorted(months_common)
             else:
                 hist_data_options = lbmp_data
@@ -1149,10 +1137,9 @@ class DataManager(EventDispatcher):
                 for year, month_list in lmp_data.items():
                     reg_month_list = reg_data.get(year, [])
 
-                    # Compute intersection of all data types.
-                    months_common = list(set(month_list).intersection(set(reg_month_list)))
-
-                    if months_common:
+                    if months_common := list(
+                        set(month_list).intersection(set(reg_month_list))
+                    ):
                         hist_data_options[year] = sorted(months_common)
             else:
                 hist_data_options = lmp_data
@@ -1168,10 +1155,9 @@ class DataManager(EventDispatcher):
                 for year, month_list in lmp_data.items():
                     reg_month_list = reg_data.get(year, [])
 
-                    # Compute intersection of all data types.
-                    months_common = list(set(month_list).intersection(set(reg_month_list)))
-
-                    if months_common:
+                    if months_common := list(
+                        set(month_list).intersection(set(reg_month_list))
+                    ):
                         hist_data_options[year] = sorted(months_common)
             else:
                 hist_data_options = lmp_data
@@ -1191,20 +1177,20 @@ class DataManager(EventDispatcher):
                     reg_month_list = reg_data.get(year, [])
                     mileage_month_list = mileage_data.get(year, [])
 
-                    # Compute intersection of all three data types.
-                    months_common = list(set(month_list).intersection(set(reg_month_list)).intersection(set(mileage_month_list)))
-
-                    if months_common:
+                    if months_common := list(
+                        set(month_list)
+                        .intersection(set(reg_month_list))
+                        .intersection(set(mileage_month_list))
+                    ):
                         hist_data_options[year] = sorted(months_common)
             else:
                 hist_data_options = lmp_data
         else:
             raise(DataManagerException('Invalid market_area given (got {0})'.format(market_area)))
-        
-        # Sort before returning.
-        return_dict = collections.OrderedDict(sorted(hist_data_options.items(), key=lambda t: int(t[0])))
 
-        return return_dict
+        return collections.OrderedDict(
+            sorted(hist_data_options.items(), key=lambda t: int(t[0]))
+        )
 
     def get_valuation_device_templates(self):
         with open(os.path.join('es_gui', 'apps', 'data_manager', '_static', 'valuation_device_templates.json'), 'r') as fp:
@@ -1221,10 +1207,8 @@ class DataManager(EventDispatcher):
     def get_valuation_model_params(self, market_area):
         with open(os.path.join('es_gui', 'apps', 'data_manager', '_static', 'valuation_model_params.json'), 'r') as fp:
             model_params_all = json.load(fp)
-        
-        model_params = model_params_all.get(market_area, {})
 
-        return model_params
+        return model_params_all.get(market_area, {})
     
     def get_btm_cost_savings_model_params(self):
         """Returns the list of dictionaries of parameters for the energy storage system model in the BTM cost savings application."""

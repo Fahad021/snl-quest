@@ -206,17 +206,15 @@ class DataManagerPanelERCOT(BoxLayout):
         urlERCOT_list = []
         folderprice = []
         if typedat == "both":
-            urlERCOT_list.append(urlERCOT_spp)
-            urlERCOT_list.append(urlERCOT_ccp)
-            folderprice.append("/ERCOT/SPP/")
-            folderprice.append("/ERCOT/CCP/")
-        elif typedat == "spp":
-            urlERCOT_list.append(urlERCOT_spp)
-            folderprice.append("/ERCOT/SPP/")
+            urlERCOT_list.extend((urlERCOT_spp, urlERCOT_ccp))
+            folderprice.extend(("/ERCOT/SPP/", "/ERCOT/CCP/"))
         elif typedat == "ccp":
             urlERCOT_list.append(urlERCOT_ccp)
             folderprice.append("/ERCOT/CCP/")
 
+        elif typedat == "spp":
+            urlERCOT_list.append(urlERCOT_spp)
+            folderprice.append("/ERCOT/SPP/")
         # Iterate through the requested data categories.
         for ixlp, urlERCOT_list_x in enumerate(urlERCOT_list):
             try:
@@ -224,16 +222,15 @@ class DataManagerPanelERCOT(BoxLayout):
                 page = requests.get(urlERCOT_list_x, timeout=10, proxies=proxy_settings, verify=ssl_verify)
                 soup_ERCOT_page = BeautifulSoup(page.content, 'html.parser')
 
-                zipfileslinks_ERCOT_page = []
-                for link in soup_ERCOT_page.find_all('a'):
-                    zipfileslinks_ERCOT_page.append(link.get('href'))
-                    #print(link.get('href'))
-                #print(zipfileslinks_ERCOT_page)
-
-                zipfilesnames_ERCOT_page = []
-                for tdlink in soup_ERCOT_page.find_all('td', attrs={'class': 'labelOptional_ind'}):
-                    zipfilesnames_ERCOT_page.append(tdlink.text)
-                    #print(tdlink.text)
+                zipfileslinks_ERCOT_page = [
+                    link.get('href') for link in soup_ERCOT_page.find_all('a')
+                ]
+                zipfilesnames_ERCOT_page = [
+                    tdlink.text
+                    for tdlink in soup_ERCOT_page.find_all(
+                        'td', attrs={'class': 'labelOptional_ind'}
+                    )
+                ]
                 #print(zipfilesnames_ERCOT_page)
 
                 # Find the .zip files for the requested years of data.
@@ -251,9 +248,9 @@ class DataManagerPanelERCOT(BoxLayout):
                     for year_x in yearlist:
                         #logging.info('ERCOTdownloader: Downloading data for {0}...'.format(year_x))
                         #Clock.schedule_once(partial(self.update_output_log, 'Downloading data for {0}...'.format(year_x)))
-                        
+
                         yearstr = str(year_x)
-                        yearzip = "_" + yearstr + ".zip"
+                        yearzip = f"_{yearstr}.zip"
                         ixloop_x = [ix for ix, x in enumerate(zipfilesnames_ERCOT_page) if yearzip in x]
                         ixloop.append(ixloop_x[0])
 
@@ -315,7 +312,7 @@ class DataManagerPanelERCOT(BoxLayout):
                     # Stop running this thread so the main Python process can exit.
                     self.n_active_threads -= 1
                     return
-            
+
         self.n_active_threads -= 1
 
 
@@ -441,18 +438,17 @@ class DataManagerPanelISONE(BoxLayout):
             # Compute the range of months to iterate over.
             monthrange = pd.date_range(datetime_start, datetime_end, freq='1MS')
 
-            # Compute number of days in the given range.
-            total_days = 0
-            for date in monthrange:
-                total_days += calendar.monthrange(date.year, date.month)[1]
-            
+            total_days = sum(
+                calendar.monthrange(date.year, date.month)[1]
+                for date in monthrange
+            )
             total_months = len(monthrange)
-            
+
             # Distribute the requests for multiple threads.
             job_batches = batch_splitter(monthrange)
 
             self.n_active_threads = len(job_batches)
-            
+
             # (Re)set the progress bar and output log.
             self.progress_bar.value = 0
             self.progress_bar.max = total_months*total_nodes + total_months

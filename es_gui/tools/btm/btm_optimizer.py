@@ -515,24 +515,15 @@ class BtmOptimizer(optimizer.Optimizer):
     
     def has_energy_charges(self):
         """Returns True if there are energy charges (savings)."""
-        if abs(self.energy_charge_with_es - self.energy_charge_without_es) > 1e-4:
-            return True
-        else:
-            return False
+        return abs(self.energy_charge_with_es - self.energy_charge_without_es) > 1e-4
     
     def has_demand_charges(self):
         """Returns True if there are demand charges (savings)."""
-        if abs(self.demand_charge_with_es - self.demand_charge_without_es) > 1e-4:
-            return True
-        else:
-            return False
+        return abs(self.demand_charge_with_es - self.demand_charge_without_es) > 1e-4
     
     def has_nem_charges(self):
         """Returns True if there are net metering charges (savings)."""
-        if abs(self.nem_charge_with_es - self.nem_charge_without_es) > 1e-4:
-            return True
-        else:
-            return False
+        return abs(self.nem_charge_with_es - self.nem_charge_without_es) > 1e-4
 
 
 class BadParameterException(Exception):

@@ -47,14 +47,13 @@ class BatchRunScreen(Screen):
         rv_selected, months, iso, rev_streams, node = data_screen.get_inputs()
         param_settings = params_screen.get_inputs()
 
-        requests = {'iso': iso,
-                    'market type': rev_streams,
-                    'months': months,
-                    'node id': node['nodeid'],
-                    'param set': param_settings
-                    }
-
-        return requests
+        return {
+            'iso': iso,
+            'market type': rev_streams,
+            'months': months,
+            'node id': node['nodeid'],
+            'param set': param_settings,
+        }
 
     def run_batch(self):
         try:
@@ -139,9 +138,7 @@ class BatchRunParamScreen(Screen):
         for row_widget in self.param_widget.children:
             row_widget.text_input.disabled = False
 
-        attr_name = self.param_to_attr.get(text, '')
-
-        if attr_name:
+        if attr_name := self.param_to_attr.get(text, ''):
             param_widget_row = getattr(self.param_widget, attr_name, None)
             param_widget_row.text_input.disabled = True
 
@@ -166,7 +163,7 @@ class BatchRunParamScreen(Screen):
             else:
                 if param_max < param_min:
                     raise InputError('Parameter sweep minimum must be less than or equal to the maximum.')
-            
+
             # Values cannot be negative.
             if any([param_min < 0, param_max < 0]):
                 raise InputError('"{0}" cannot be negative.'.format(param_sweep_name))
@@ -174,15 +171,9 @@ class BatchRunParamScreen(Screen):
             # Percentages cannot exceed 100%.
             if param_sweep_attr_name in {'Self_discharge_efficiency', 'Round_trip_efficiency', 'State_of_charge_init', 'State_of_charge_min', 'State_of_charge_max', 'Reserve_reg_min', 'Reserve_reg_max',} and any([param_min > 100, param_max > 100]):
                 raise InputError('"{0}" cannot exceed 100%.'.format(param_sweep_name))
-            
+
             # State of charge initial, min, and max sweeps must comply with inequalities.
-            if param_sweep_attr_name == 'State_of_charge_min':
-                if not all([param_min < param_dict['State_of_charge_init'], param_max <= param_dict['State_of_charge_init']]):
-                    raise InputError('The parameter sweep range for "{0}" must be entirely less than the initial state of charge.'.format(param_sweep_name))
-            elif param_sweep_attr_name == 'State_of_charge_max':
-                if not all([param_min >= param_dict['State_of_charge_init'], param_max > param_dict['State_of_charge_init']]):
-                    raise InputError('The parameter sweep range for "{0}" must be entirely greater than the initial state of charge.'.format(param_sweep_name))
-            elif param_sweep_attr_name == 'State_of_charge_init':
+            if param_sweep_attr_name == 'State_of_charge_init':
                 if not all([
                     param_dict['State_of_charge_max'] > param_min,
                     param_dict['State_of_charge_max'] >= param_max,
@@ -190,9 +181,14 @@ class BatchRunParamScreen(Screen):
                     param_dict['State_of_charge_min'] < param_max,
                     ]):
                     raise InputError('The parameter sweep range for "{0}" must be entirely between the minimum and maximum state of charge values.'.format(param_sweep_name))
-        else:
-            if any([self.param_min_input.text, self.param_max_input.text, self.param_step_input.text]):
-                raise InputError('Did you forget to provide a parameter for the parameter sweep? Numbers for the sweep range were provided but no parameter was given.')
+            elif param_sweep_attr_name == 'State_of_charge_max':
+                if not all([param_min >= param_dict['State_of_charge_init'], param_max > param_dict['State_of_charge_init']]):
+                    raise InputError('The parameter sweep range for "{0}" must be entirely greater than the initial state of charge.'.format(param_sweep_name))
+            elif param_sweep_attr_name == 'State_of_charge_min':
+                if not all([param_min < param_dict['State_of_charge_init'], param_max <= param_dict['State_of_charge_init']]):
+                    raise InputError('The parameter sweep range for "{0}" must be entirely less than the initial state of charge.'.format(param_sweep_name))
+        elif any([self.param_min_input.text, self.param_max_input.text, self.param_step_input.text]):
+            raise InputError('Did you forget to provide a parameter for the parameter sweep? Numbers for the sweep range were provided but no parameter was given.')
 
     def get_inputs(self):
         self._validate_inputs()

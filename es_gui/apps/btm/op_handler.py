@@ -148,22 +148,19 @@ class BtmOptimizerHandler:
                 pv_profile_name = 'PV: {0}'.format(op.pv_profile_metadata.get('name', 'Not specified'))
             else:
                 pv_profile_name = 'PV: Not specified'
-            
+
             name_components.append(pv_profile_name)
         else:
             name_components.append('PV: None')
-        
+
         # Load profile name.
         load_profile_name = 'Load: {0}'.format(op.load_profile_metadata.get('name', ''))
         name_components.append(load_profile_name)
 
         name = ' | '.join(name_components)
 
-        results_dict = {}
+        results_dict = {'name': name, 'optimizer': op, 'month': month}
 
-        results_dict['name'] = name
-        results_dict['optimizer'] = op
-        results_dict['month'] = month
         if param_set:
             results_dict['params'] = param_set
         results_dict['time'] = time_finished
@@ -175,7 +172,5 @@ class BtmOptimizerHandler:
     
     def get_solved_ops(self):
         """Returns the list of solved Optimizer objects in reverse chronological order."""
-        return_list = reversed(self.solved_ops)
-
-        return return_list
+        return reversed(self.solved_ops)
     

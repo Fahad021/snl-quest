@@ -481,15 +481,15 @@ class CostSavingsWizardPVSelect(Screen):
 
             with open(pv_profile_template_file, 'r') as f:
                 pv_profile_template = json.load(f)
-            
+
             ac_output_w = dataframe.iloc[:, 0].tolist()
             pv_profile_template['outputs']['ac'] = ac_output_w
 
-            save_destination = os.path.join(write_directory, fname + '.json')
-            
+            save_destination = os.path.join(write_directory, f'{fname}.json')
+
             with open(save_destination, 'w') as f:
                 json.dump(pv_profile_template, f)
-            
+
             return save_destination
 
         self.data_importer = DataImporter(
@@ -510,7 +510,7 @@ class CostSavingsWizardPVSelect(Screen):
                 logging.info('DataImporter: Data import complete.')
                 self.pv_profile_selected = {'name': 'Custom', 'path': import_filename, 'descriptors': get_pv_profile_string(import_filename)}
                 self.imported_data_selected = True
-        
+
         self.data_importer.bind(on_dismiss=lambda t: _check_data_importer_on_dismissal())
         self.data_importer.open()
     
@@ -629,9 +629,10 @@ class CostSavingsWizardSummary(Screen):
     def get_selections(self):
         sm = self.manager
 
-        op_handler_requests = {}
+        op_handler_requests = {
+            'rate_structure': sm.get_screen('rate_select').get_selections()
+        }
 
-        op_handler_requests['rate_structure'] = sm.get_screen('rate_select').get_selections()
         op_handler_requests['load_profile'] = sm.get_screen('load_profile_select').get_selections()
         op_handler_requests['pv_profile'] = sm.get_screen('pv_profile_select').get_selections()
         op_handler_requests['params'], op_handler_requests['param desc'] = sm.get_screen('system_parameters').get_selections()
@@ -664,14 +665,14 @@ class CostSavingsWizardSummary(Screen):
             ])
         self.load_profile_label.text = load_profile_text
 
-        # PV profile label.
-        pv_profile_text = '[b]PV Profile:[/b]\n'
-        pv_profile_text += '\n'.join(pv_profile.get('descriptors', ['None selected']))
+        pv_profile_text = '[b]PV Profile:[/b]\n' + '\n'.join(
+            pv_profile.get('descriptors', ['None selected'])
+        )
         self.pv_profile_label.text = pv_profile_text
 
-        # System parameters label.
-        system_parameters_text = '[b]System Parameters:[/b]\n'
-        system_parameters_text += '\n'.join(system_params)
+        system_parameters_text = '[b]System Parameters:[/b]\n' + '\n'.join(
+            system_params
+        )
         self.system_parameters_label.text = system_parameters_text
     
     def on_leave(self):

@@ -202,9 +202,6 @@ class WarningPopup(MyPopup):
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self, 'text')
 
-        if self._keyboard.widget:
-            pass
-
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
 
     def _keyboard_closed(self):
@@ -269,7 +266,9 @@ class WizardReportInterface(Screen):
             # random_report = choice(self.chart_type_toggle.children)
             # random_report.state = 'down'
 
-        if not any([button.state == 'down' for button in self.chart_type_toggle.children]):
+        if all(
+            button.state != 'down' for button in self.chart_type_toggle.children
+        ):
             Clock.schedule_once(lambda dt: _start(), 0.25)
 
 
@@ -309,7 +308,6 @@ class ParamTextInput(TextInput):
 class ParameterGridWidget(GridLayout):
     """Grid layout containing rows of parameter adjustment widgets."""   
     def _validate_inputs(self):
-        params = []
         param_set = {}
 
         for row in self.children:
@@ -319,12 +317,10 @@ class ParameterGridWidget(GridLayout):
                 attr_val = row.text_input.hint_text
             else:
                 attr_val = row.text_input.text
-            
-            param_set[attr_name] = float(attr_val)
-        
-        params.append(param_set)
 
-        return params
+            param_set[attr_name] = float(attr_val)
+
+        return [param_set]
     
     def get_inputs(self):
         try:
@@ -499,14 +495,7 @@ class ResultsViewer(Screen):
         rv = self.rv
         runs_selected = [rv.data[selected_ix] for selected_ix in rv.layout_manager.selected_nodes]
 
-        results = {}
-
-        for run in runs_selected:
-            label = run['name']
-            df = run['optimizer'].results
-
-            results[label] = df
-
+        results = {run['name']: run['optimizer'].results for run in runs_selected}
         self.dfs = results
 
     def _validate_inputs(self):
@@ -528,10 +517,7 @@ class ResultsViewer(Screen):
 
             return False
 
-        if not self.time_selector.validate():
-            return False
-
-        return True
+        return bool(self.time_selector.validate())
 
     def draw_figure(self, *args):
         pass
@@ -545,24 +531,23 @@ class ResultsViewer(Screen):
         if not self.plotbox.children:
             popup = WarningPopup()
             popup.popup_text.text = "There is currently no plot drawn to export."
-            popup.open()
         elif self.dfs:
-            outname = os.path.join(outdir_root, self.vars_button.text+'.png')
+            outname = os.path.join(outdir_root, f'{self.vars_button.text}.png')
             self.plotbox.children[0].export_to_png(outname)
 
             popup = WarningPopup(size_hint=(0.4, 0.4))
             popup.title = 'Success!'
             popup.popup_text.text = 'Figure successfully exported to:\n\n' + os.path.abspath(outname)
-            popup.open()
         else:
             popup = WarningPopup()
             popup.popup_text.text = "We need a plot to export! Let's pick some solved models to view first."
-            popup.open()
+
+        popup.open()
 
     def export_csv(self, outdir_root):
         """Exports selected DataFrames to .csv files in specified location."""
         os.makedirs(outdir_root, exist_ok=True)
-        
+
         self._update_selection()
 
         if self.dfs:
@@ -575,7 +560,7 @@ class ResultsViewer(Screen):
                 delchars = ''.join(c for c in map(chr, range(256)) if not c.isalnum())
                 run_name = run_name.translate({ord(i): None for i in delchars})
 
-                outname = os.path.join(outdir_root, run_name + '.csv')
+                outname = os.path.join(outdir_root, f'{run_name}.csv')
                 df = self.dfs[run]
                 os.makedirs(outdir_root, exist_ok=True)
                 df.to_csv(outname, index=False)
@@ -583,11 +568,11 @@ class ResultsViewer(Screen):
             popup = WarningPopup(size_hint=(0.4, 0.4))
             popup.title = 'Success!'
             popup.popup_text.text = 'File(s) successfully exported to:\n\n' + os.path.abspath(outdir_root)
-            popup.open()
         else:
             popup = WarningPopup()
             popup.popup_text.text = "We need some results to export! Let's pick some solved models to view first."
-            popup.open()
+
+        popup.open()
 
 
 class TimeSelector(MyPopup):
@@ -710,7 +695,7 @@ class ValuationParameterWidget(GridLayout):
             # Values cannot be negative.
             if param_value < 0:
                 raise InputError('"{0}" cannot be negative. (got {1})'.format(param_name, param_value))
-            
+
             # Percentages cannot exceed 100.
             if attr_name in {'Self_discharge_efficiency', 'Round_trip_efficiency', 'State_of_charge_init', 'State_of_charge_min', 'State_of_charge_max', 'Reserve_reg_min', 'Reserve_reg_max',} and param_value > 100:
                 raise InputError('"{0}" cannot exceed 100%. (got {1})'.format(param_name, param_value))
@@ -720,8 +705,11 @@ class ValuationParameterWidget(GridLayout):
             raise InputError('The maximum state of charge must be greater than the minimum state of charge.')
 
         # Initial state of charge must be between the minimum and maximum state of charge values.
-        if not (param_dict['State_of_charge_max'] >= param_dict['State_of_charge_init'] and 
-        param_dict['State_of_charge_init'] >= param_dict['State_of_charge_min']):
+        if (
+            not param_dict['State_of_charge_max']
+            >= param_dict['State_of_charge_init']
+            >= param_dict['State_of_charge_min']
+        ):
             raise InputError('The initial state of charge must be between the minimum and maximum state of charge values.')
     
     def get_inputs(self, use_hint_text=False):

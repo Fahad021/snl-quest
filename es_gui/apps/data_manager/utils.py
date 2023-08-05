@@ -12,13 +12,13 @@ def check_connection_settings():
     if int(app_config.get('connectivity', 'use_proxy')):
         http_proxy = app_config.get('connectivity', 'http_proxy')
         https_proxy = app_config.get('connectivity', 'https_proxy')
-        
+
         if http_proxy:
             proxy_settings['http'] = http_proxy
         if https_proxy:
             proxy_settings['https'] = https_proxy
-    
+
     # SSL verification.
-    ssl_verify = True if int(app_config.get('connectivity', 'use_ssl_verify')) else False
+    ssl_verify = bool(int(app_config.get('connectivity', 'use_ssl_verify')))
 
     return ssl_verify, proxy_settings

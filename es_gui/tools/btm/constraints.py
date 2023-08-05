@@ -47,12 +47,9 @@ def eq_objective_btm(m):
 def eq_stateofcharge(m):
     """Definition of state of charge"""
     mp = m.parent_block()
-   
+
     def _eq_stateofcharge(_m, t):
-        if t==0:
-            spre=mp.State_of_charge_init*mp.Energy_capacity
-        else:
-            spre=mp.s[t-1]
+        spre = mp.State_of_charge_init*mp.Energy_capacity if t==0 else mp.s[t-1]
         return mp.Self_discharge_efficiency * spre + mp.Round_trip_efficiency * mp.pcha[t] \
             - mp.pdis[t] == mp.s[t]       
 

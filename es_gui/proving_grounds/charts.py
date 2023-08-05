@@ -16,12 +16,7 @@ from kivy.uix.stencilview import StencilView
 
 def format_dollar_string(value):
     """Formats a float representing USD with comma separators, dollar sign, cents precision, and proper negative sign placement."""
-    if value >= 0:
-        return_str = "${0:,.2f}".format(value)
-    else:
-        return_str = "-${0:,.2f}".format(-value)
-    
-    return return_str
+    return "${0:,.2f}".format(value) if value >= 0 else "-${0:,.2f}".format(-value)
 
 
 class Chart(RelativeLayout):
@@ -107,11 +102,7 @@ class StackedBarChart(Chart):
         super(StackedBarChart, self).__init__(**kwargs)
 
         # sets default y-axis label format to two decimal place precision (fixed point)
-        if not y_axis_format:
-            self.y_axis_format = '{0:.2f}'
-        else:
-            self.y_axis_format = y_axis_format
-
+        self.y_axis_format = '{0:.2f}' if not y_axis_format else y_axis_format
         self.legend_width = legend_width
         self.bar_spacing = bar_spacing
         self.x_padding = x_padding
@@ -141,16 +132,18 @@ class StackedBarChart(Chart):
             bars[bar_set_name] = [BarChartEntry._make(x) for x in bar_data[bar_set_name]]
 
             # catch any negative-valued data and raise exception
-            if any([bar_component.value < 0 for bar_component in bars[bar_set_name]]):
+            if any(
+                bar_component.value < 0 for bar_component in bars[bar_set_name]
+            ):
                 raise (ValueError('StackedBarChart does not support negative values!'))
 
         # determine the tallest and shortest stacks by adding up their values
-        self.max_bar = max(bars.items(), key=lambda bar: sum([x.value for x in bar[1]]))
-        self.min_bar = min(bars.items(), key=lambda bar: sum([x.value for x in bar[1]]))
+        self.max_bar = max(bars.items(), key=lambda bar: sum(x.value for x in bar[1]))
+        self.min_bar = min(bars.items(), key=lambda bar: sum(x.value for x in bar[1]))
 
         # determine the maximum and minimum stack values
-        max_value = sum([x.value for x in self.max_bar[1]])
-        min_value = sum([x.value for x in self.min_bar[1]])
+        max_value = sum(x.value for x in self.max_bar[1])
+        min_value = sum(x.value for x in self.min_bar[1])
 
         # compute origin coordinates, maximum bar height, and bar width
         x0 = self.legend_width + self.x_padding  # x-coordinate of leftmost bar
@@ -229,11 +222,8 @@ class StackedBarChart(Chart):
         # generate bar widgets
         self.generate_bars(bar_data)
 
-        if not self._do_animation:
-            t_anim = 0  # the length [s] of the growing bar element animation
-        else:
-            t_anim = 0.5
-        n_stack_comp = max([len(x) for x in bar_data.values()])  # the number of elements in each group
+        t_anim = 0 if not self._do_animation else 0.5
+        n_stack_comp = max(len(x) for x in bar_data.values())
 
         def _anim_bar(bar, height, *args):
             anim = Animation(size=(bar.size[0], height), duration=t_anim, t='out_circ')
@@ -261,11 +251,7 @@ class StackedBarChart(Chart):
         self.legend.gen_legend(legend_data)
 
         def _anim_legend(legend, *args):
-            if self._do_animation:
-                t_anim_legend = 1.0
-            else:
-                t_anim_legend = 0
-
+            t_anim_legend = 1.0 if self._do_animation else 0
             anim = Animation(opacity=1, duration=t_anim_legend, t='linear')
             anim.start(legend)
 
@@ -289,11 +275,7 @@ class MultisetBarChart(StackedBarChart):
         super(MultisetBarChart, self).__init__(**kwargs)
 
         # sets default y-axis label format to two decimal place precision (fixed point)
-        if not y_axis_format:
-            self.y_axis_format = '{0:.2f}'
-        else:
-            self.y_axis_format = y_axis_format
-
+        self.y_axis_format = '{0:.2f}' if not y_axis_format else y_axis_format
         self.bar_spacing = bar_spacing
         self.legend_width = legend_width
         self.x_padding = x_padding
@@ -322,7 +304,7 @@ class MultisetBarChart(StackedBarChart):
         # form dictionary with key: bar stack name and value: list of BarChartEntry tuples corresponding to set components
         for bar_set_name in bar_data.keys():
             bars[bar_set_name] = [BarChartEntry._make(x) for x in bar_data[bar_set_name]]
-        
+
         # max value by category
         all_bar_components = [bar for bar_set in bars.values() for bar in bar_set]
         categories = {bar_component.category for bar_component in all_bar_components}
@@ -330,17 +312,22 @@ class MultisetBarChart(StackedBarChart):
         max_bar_entries = {}
 
         for category in categories:
-            category_components = []
-
-            for bar_component in all_bar_components:
-                if bar_component.category == category:
-                    category_components.append(bar_component)
-
+            category_components = [
+                bar_component
+                for bar_component in all_bar_components
+                if bar_component.category == category
+            ]
             max_bar_entries[category] = max(category_components, key=lambda x: abs(x.value))
 
         # determine the tallest and shortest bars and their respective values
-        self.max_bar = max([bar_entry for bar_set in bars.values() for bar_entry in bar_set], key=lambda x: x.value)
-        self.min_bar = min([bar_entry for bar_set in bars.values() for bar_entry in bar_set], key=lambda x: x.value)
+        self.max_bar = max(
+            (bar_entry for bar_set in bars.values() for bar_entry in bar_set),
+            key=lambda x: x.value,
+        )
+        self.min_bar = min(
+            (bar_entry for bar_set in bars.values() for bar_entry in bar_set),
+            key=lambda x: x.value,
+        )
 
         max_value = self.max_bar.value
         min_value = self.min_bar.value
@@ -354,7 +341,7 @@ class MultisetBarChart(StackedBarChart):
         self.bar_group_width = (self.width - x0 - self.x_padding - self.bar_spacing * (len(bars) - 1)) / len(bars)
 
         # calculate width of bars in each in group, assuming no spacing among them
-        self.bar_width = self.bar_group_width /max([len(x) for x in bars.values()])
+        self.bar_width = self.bar_group_width / max(len(x) for x in bars.values())
 
         # compute bar height:value ratio
         try:
@@ -367,7 +354,7 @@ class MultisetBarChart(StackedBarChart):
             y0 = self.y_padding + abs(min_value) * dydv
         else:
             y0 = self.y_padding
-        
+
         if max_value < 0:
             y0 = self.max_height + self.y_padding
 
@@ -427,14 +414,14 @@ class MultisetBarChart(StackedBarChart):
 
             zero_label = Label(pos=(0.75*x0 - self.width/2, self.max_height + self.y_padding - self.height/2),
                            text='0', halign='right',color=[0, 0, 0, 1])  
-                           
+
         self.add_widget(zero_label)
 
         # label y=0 if minimum value < 0
         if min_value < 0:
             # fix y_axis_format specification for proper $ representation for negative values
             if self.y_axis_format[0] == '$':
-                label_text = '-' + self.y_axis_format.format(-min_value)
+                label_text = f'-{self.y_axis_format.format(-min_value)}'
             else:
                 label_text = self.y_axis_format.format(min_value)
 
@@ -448,19 +435,19 @@ class MultisetBarChart(StackedBarChart):
                 Line(points=[x0, self.y_padding,
                              self.width - self.x_padding, self.y_padding],
                      width=1,)
-        
+
         # label the maximum value for each multibar set
         for category in categories:
             category_max_bar = max_bar_entries[category]
 
             category_max_value = category_max_bar.value
 
-            if category_max_value != max_value and category_max_value != min_value:
+            if category_max_value not in [max_value, min_value]:
                 label_text = self.y_axis_format.format(category_max_value)
 
                 if category_max_value < 0:
                     if self.y_axis_format[0] == '$':
-                        label_text = '-' + self.y_axis_format.format(-category_max_value)
+                        label_text = f'-{self.y_axis_format.format(-category_max_value)}'
 
                 if max_value > 0:
                     component_max_label = Label(pos=(0.75*x0 - self.width/2, self.max_height - (max_value - category_max_value)*dydv + self.y_padding - self.height/2),
@@ -497,11 +484,7 @@ class BarChart(Chart):
         super(BarChart, self).__init__(**kwargs)
 
         # sets default y-axis label format to two decimal place precision (fixed point)
-        if not y_axis_format:
-            self.y_axis_format = '{0:.2f}'
-        else:
-            self.y_axis_format = y_axis_format
-
+        self.y_axis_format = '{0:.2f}' if not y_axis_format else y_axis_format
         self.bar_spacing = bar_spacing
         self.x_padding = x_padding
         self.y_padding = y_padding
@@ -548,7 +531,7 @@ class BarChart(Chart):
             y0 = self.y_padding + abs(min_value)*dydv
         else:
             y0 = self.y_padding
-        
+
         if max_value < 0:
             y0 = self.max_height + self.y_padding
 
@@ -601,7 +584,7 @@ class BarChart(Chart):
         if min_value < 0:
             # fix y_axis_format specification for proper $ representation for negative values
             if self.y_axis_format[0] == '$':
-                label_text = '-' + self.y_axis_format.format(-min_value)
+                label_text = f'-{self.y_axis_format.format(-min_value)}'
             else:
                 label_text = self.y_axis_format.format(min_value)
 
@@ -716,7 +699,7 @@ class DonutChart(Chart):
         #self.legend.padding = (0, self.height/4)
         self.add_widget(self.legend)
 
-        val_total = float(sum([x.value if x.value > 0 else 0 for x in slice_data]))
+        val_total = float(sum(x.value if x.value > 0 else 0 for x in slice_data))
         legend_data = []
 
         for entry in slice_data:

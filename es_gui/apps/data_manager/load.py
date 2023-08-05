@@ -21,8 +21,8 @@ from es_gui.resources.widgets.common import InputError, WarningPopup, Connection
 MAX_WHILE_ATTEMPTS = 7
 
 DATASET_ROOT = 'https://openei.org/datasets/files/961/pub/'
-COMMERCIAL_LOAD_ROOT = DATASET_ROOT + 'COMMERCIAL_LOAD_DATA_E_PLUS_OUTPUT/'
-RESIDENTIAL_LOAD_ROOT = DATASET_ROOT + 'RESIDENTIAL_LOAD_DATA_E_PLUS_OUTPUT/'
+COMMERCIAL_LOAD_ROOT = f'{DATASET_ROOT}COMMERCIAL_LOAD_DATA_E_PLUS_OUTPUT/'
+RESIDENTIAL_LOAD_ROOT = f'{DATASET_ROOT}RESIDENTIAL_LOAD_DATA_E_PLUS_OUTPUT/'
 
 
 class DataManagerLoadHomeScreen(Screen):
@@ -247,9 +247,7 @@ class DataManagerCommercialLoadScreen(Screen):
             logging.info('LoadProfileDM: Building type selection reset.')
     
     def _validate_selections(self):
-        csv_link = self.building_selected['link']
-
-        return csv_link
+        return self.building_selected['link']
     
     def save_load_data(self):
         """Saves the data for the building type selected."""
@@ -558,9 +556,7 @@ class DataManagerResidentialLoadScreen(Screen):
             logging.info('LoadProfileDM: Location selection reset.')
     
     def _validate_selections(self):
-        csv_link = self.location_selected['link']
-
-        return csv_link
+        return self.location_selected['link']
     
     def save_load_data(self):
         """Saves the data for the building type selected."""

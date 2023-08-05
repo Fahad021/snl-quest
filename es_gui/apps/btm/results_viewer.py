@@ -67,15 +67,7 @@ class BtmResultsViewer(ResultsViewer):
         plt.xticks(rotation=0)
         plt.grid(True)
 
-        if plot_type == 'load':
-            for key in results:
-                df = results[key]
-                ax.plot((df['Pload'])[start_time:end_time], drawstyle='steps-post', label=textwrap.fill(key, 50))
-
-            ax.set_ylabel('kWh')
-            ax.set_xlabel('ending hour')
-            ax.set_title('Load (kWh)')
-        elif plot_type == 'charge profile':
+        if plot_type == 'charge profile':
             for key in results:
                 df = results[key]
 
@@ -84,6 +76,14 @@ class BtmResultsViewer(ResultsViewer):
             ax.set_ylabel('kWh')
             ax.set_xlabel('ending hour')
             ax.set_title('Charge Profile (kW)')
+        elif plot_type == 'load':
+            for key in results:
+                df = results[key]
+                ax.plot((df['Pload'])[start_time:end_time], drawstyle='steps-post', label=textwrap.fill(key, 50))
+
+            ax.set_ylabel('kWh')
+            ax.set_xlabel('ending hour')
+            ax.set_title('Load (kWh)')
         elif plot_type == 'revenue':
             for key in results:
                 df = results[key]
@@ -139,9 +139,7 @@ class BtmResultsViewer(ResultsViewer):
 
         #         ax.set_title(plot_type)
 
-        if plot_type in ['total bill', 'total savings']:
-            pass
-        else:
+        if plot_type not in ['total bill', 'total savings']:
             ax.legend(bbox_to_anchor=(1.02, 0.5), loc="center left", borderaxespad=0, shadow=False, labelspacing=1.8)
 
         self.plotbox.children[0].draw()

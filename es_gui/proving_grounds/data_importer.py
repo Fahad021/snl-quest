@@ -193,11 +193,7 @@ class DataImporter(ModalView):
     def __init__(self, write_directory=None, write_function=None, chooser_description=None, format_description=None, data_validation_function=None, **kwargs):
         super(DataImporter, self).__init__(**kwargs)
 
-        if write_directory is None:
-            self.write_directory = ""
-        else:
-            self.write_directory = write_directory
-        
+        self.write_directory = "" if write_directory is None else write_directory
         if write_function is None:
             def _write_time_series_csv(fname, dataframe):
                 """Writes a generic time series dataframe to a two-column csv. 
@@ -225,9 +221,9 @@ class DataImporter(ModalView):
                 dataframe["DateTime"] = hour_range
 
                 dataframe[["DateTime", data_column_name]].to_csv(save_destination, index=False)
-                
+
                 return save_destination
-            
+
             self.write_function = _write_time_series_csv
         else:
             self.write_function = write_function
@@ -236,7 +232,7 @@ class DataImporter(ModalView):
             self.chooser_description = "Select a .csv file to import data from."
         else:
             self.chooser_description = chooser_description
-        
+
         file_chooser_screen = self.screen_manager.get_screen("FileChooser")
         file_chooser_screen.file_chooser_body_text.text = self.chooser_description
 
@@ -247,12 +243,12 @@ class DataImporter(ModalView):
 
         format_analyzer_screen = self.screen_manager.get_screen("FormatAnalyzer")
         format_analyzer_screen.format_analyzer_body_text.text = self.format_description
-    
+
         if data_validation_function is None:
             def _default_data_validation_function(dataframe, data_column_name):
                 if len(dataframe) != 8760:
                     raise ValueError("The length of the time series must be 8760 (got {0}).".format(len(dataframe)))
-                
+
                 data_column = dataframe[data_column_name]
 
                 try:

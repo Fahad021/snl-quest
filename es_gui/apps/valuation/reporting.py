@@ -199,11 +199,17 @@ class ValuationReportScreen(ReportScreen):
         self.title.text = "Here's how much revenue the device generated each month."
         self.desc.text = 'Revenue was generated based on participation in the selected revenue streams. '
         report_templates = [
-            'The gross revenue generated over the evaluation period was [b]${0:,.2f}[/b].'.format(sum([op[1].gross_revenue for op in self.chart_data])),
-            'The highest revenue in a month was [b]${0:,.2f}[/b], generated in [b]{1}[/b].'.format(max_bar.value,
-                                                                                                   calendar.month_name[list(calendar.month_abbr).index(max_bar.name)]),
-        'The lowest revenue in a month was [b]${0:,.2f}[/b], generated in [b]{1}[/b].'.format(min_bar.value,
-                                                                                              calendar.month_name[list(calendar.month_abbr).index(min_bar.name)]),
+            'The gross revenue generated over the evaluation period was [b]${0:,.2f}[/b].'.format(
+                sum(op[1].gross_revenue for op in self.chart_data)
+            ),
+            'The highest revenue in a month was [b]${0:,.2f}[/b], generated in [b]{1}[/b].'.format(
+                max_bar.value,
+                calendar.month_name[list(calendar.month_abbr).index(max_bar.name)],
+            ),
+            'The lowest revenue in a month was [b]${0:,.2f}[/b], generated in [b]{1}[/b].'.format(
+                min_bar.value,
+                calendar.month_name[list(calendar.month_abbr).index(min_bar.name)],
+            ),
         ]
 
         self.desc.text += ' '.join(report_templates)
@@ -212,11 +218,7 @@ class ValuationReportScreen(ReportScreen):
         n_rev_cats = 2
 
         # select chart colors
-        if n_rev_cats > len(PALETTE):
-            colors = PALETTE
-        else:
-            colors = sample(PALETTE, n_rev_cats)
-
+        colors = PALETTE if n_rev_cats > len(PALETTE) else sample(PALETTE, n_rev_cats)
         multisetbar_data = OrderedDict()
 
         # compute activity counts
@@ -249,28 +251,32 @@ class ValuationReportScreen(ReportScreen):
         self.title.text = "Here's how the device generated revenue each month."
         self.desc.text = 'Revenue was generated based on participation in the selected revenue streams. '
         report_templates = [
-            'The [b]gross revenue[/b] generated over the evaluation period was [b]${0:,.2f}[/b].'.format(sum([op[1].gross_revenue for op in self.chart_data])),
+            'The [b]gross revenue[/b] generated over the evaluation period was [b]${0:,.2f}[/b].'.format(
+                sum(op[1].gross_revenue for op in self.chart_data)
+            )
         ]
 
         try:
-            total_rev_arb = sum([float(op[1].results['rev_arb'].tail(1)) for op in self.chart_data])
+            total_rev_arb = sum(
+                float(op[1].results['rev_arb'].tail(1)) for op in self.chart_data
+            )
         except TypeError:
             total_rev_arb = 0
 
-        if total_rev_arb >= 0:
-            rev_arb_format = '${:,.2f}'.format(total_rev_arb)
-        else:
-            rev_arb_format = '-${:,.2f}'.format(-total_rev_arb)
-
         if total_rev_arb < 0:
+            rev_arb_format = (
+                '${:,.2f}'.format(total_rev_arb)
+                if total_rev_arb >= 0
+                else '-${:,.2f}'.format(-total_rev_arb)
+            )
             report_templates.append('The gross revenue from [b]arbitrage[/b] was [b]{0}[/b], an overall deficit. ' \
-                                    'This implies participation in arbitrage was solely for the purpose of having capacity to offer regulation up services.'.format(rev_arb_format))
+                                        'This implies participation in arbitrage was solely for the purpose of having capacity to offer regulation up services.'.format(rev_arb_format))
 
         self.desc.text += ' '.join(report_templates)
 
     def generate_activity_donut_chart(self, market=None, *args):
         donut_data = []
-        n_activities = dict()
+        n_activities = {}
         n_total = 0
 
         try:
@@ -289,7 +295,10 @@ class ValuationReportScreen(ReportScreen):
 
         # compute activity counts
         for ix, (var, name) in enumerate(activities, start=0):
-            n_activity = sum([len(op[1].results[var].values.nonzero()[0]) for op in self.chart_data])
+            n_activity = sum(
+                len(op[1].results[var].values.nonzero()[0])
+                for op in self.chart_data
+            )
             n_total += n_activity
 
             n_activities[name] = n_activity
@@ -310,7 +319,7 @@ class ValuationReportScreen(ReportScreen):
         if n_activities['sell (arbitrage)']/float(n_total) < n_activities['buy (arbitrage)']/float(n_total):
             report_templates.append(
                 'The [b]percentage[/b] of actions of selling in the [b]arbitrage[/b] market was [b]{0:.2f}%[/b], less than the percentage for buying. ' \
-                'This implies that participation in arbitrage was for the purpose of having energy to offer regulation up services.'.format(
+                    'This implies that participation in arbitrage was for the purpose of having energy to offer regulation up services.'.format(
                     n_activities['sell (arbitrage)']/float(n_total)*100))
         #
         # if sum([n_activities[name] for name in regulation_def])/float(n_total) > 0.50:
@@ -362,7 +371,12 @@ class ValuationReportScreen(ReportScreen):
                 # use percentages instead of counts for bar value
 
                 # compute the total number of actions in the stack
-                n_month_total = float(sum([len(results[var].values.nonzero()[0]) for (var, cat) in activities]))
+                n_month_total = float(
+                    sum(
+                        len(results[var].values.nonzero()[0])
+                        for (var, cat) in activities
+                    )
+                )
 
                 for iy, (var, cat) in enumerate(activities, start=0):
                     component_color = colors[iy]
@@ -390,15 +404,14 @@ class ValuationReportScreen(ReportScreen):
         # generate report text
         self.title.text = "Here's how the device participated in each revenue stream each month."
 
-        if normalized:
-            self.desc.text = 'Each bar segment represents the share of total actions attributed to each activity per month. \n\n'
-        else:
-            self.desc.text = 'Each bar segment represents the number of times the corresponding activity was performed during that month. \n\n'
-
         report_templates = [
         ]
 
-        self.desc.text += ' '.join(report_templates)
+        self.desc.text = (
+            'Each bar segment represents the share of total actions attributed to each activity per month. \n\n'
+            if normalized
+            else 'Each bar segment represents the number of times the corresponding activity was performed during that month. \n\n'
+        ) + ' '.join(report_templates)
 
 
 class GenerateReportMenu(ModalView):
@@ -537,5 +550,5 @@ class OpenGeneratedReportPopup(MyPopup):
 
     def open_generated_report(self):
         """Opens the generated report and dismisses the popup,"""
-        webbrowser.open('file://' + os.path.realpath(self.report_filename))
+        webbrowser.open(f'file://{os.path.realpath(self.report_filename)}')
         self.dismiss()

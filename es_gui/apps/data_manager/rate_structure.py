@@ -392,12 +392,12 @@ class RateStructureUtilitySearchScreen(Screen):
 
         while attempt_download:
             n_tries += 1
-            
+
             if n_tries >= MAX_WHILE_ATTEMPTS:
                 logging.warning('RateStructureDM: Hit download retry limit.')
                 attempt_download = False
                 break
-            
+
             if App.get_running_app().root.stop.is_set():
                 return
 
@@ -438,7 +438,9 @@ class RateStructureUtilitySearchScreen(Screen):
                 structure_df.dropna(subset=['energyratestructure'], inplace=True)
 
                 # Filter out entries whose energyratestructure array does not contain "rate" terms.
-                mask = structure_df['energyratestructure'].apply(lambda x: all(['rate' in hr.keys() for row in x for hr in row]))
+                mask = structure_df['energyratestructure'].apply(
+                    lambda x: all('rate' in hr.keys() for row in x for hr in row)
+                )
                 structure_df = structure_df[mask]
 
                 structure_list = structure_df.to_dict(orient='records')
@@ -592,7 +594,7 @@ class RateStructureEnergyRateStructureScreen(Screen):
 
         # Get period/rates from table.
         rates_dict = self.rate_structure_period_table.get_rates()
-        periods = set([int(period) for period in rates_dict.keys()])
+        periods = {int(period) for period in rates_dict.keys()}
 
         # Determine if any values in schedule are not in period list.
         weekday_periods = set(np.unique(weekday_schedule))
@@ -607,7 +609,7 @@ class RateStructureEnergyRateStructureScreen(Screen):
             set_diff = ', '.join(['{:d}'.format(int(x)) for x in sorted(weekend_periods.difference(periods))])
 
             raise(InputError('Impermissible entries ({0}) in the Weekend Rate Schedule found.'.format(set_diff)))
-        
+
         return weekday_schedule, weekend_schedule, rates_dict
     
     def get_selections(self):
@@ -654,17 +656,19 @@ class RateStructureDemandRateStructureScreen(Screen):
         self.rate_structure = rate_structure
 
         # Get the demand rate structures.
-        flat_demand_months = rate_structure.get('flatdemandmonths', [0 for x in range(12)])
+        flat_demand_months = rate_structure.get(
+            'flatdemandmonths', [0 for _ in range(12)]
+        )
         flat_demand_rates = rate_structure.get('flatdemandstructure', [[{'rate': 0}]])
         tou_demand_rates = rate_structure.get('demandratestructure', [[{'rate': 0}]])
 
         # Sometimes rather than being empty, a nan is in the field.
         if type(flat_demand_rates) == float:
             flat_demand_rates = [[{'rate': 0}]]
-        
+
         if type(flat_demand_months) == float:
-            flat_demand_months = [0 for x in range(12)]
-        
+            flat_demand_months = [0 for _ in range(12)]
+
         if type(tou_demand_rates) == float:
             tou_demand_rates = [[{'rate': 0}]]
 
@@ -679,7 +683,7 @@ class RateStructureDemandRateStructureScreen(Screen):
             row = RateStructureTableRow(desc={'period': calendar.month_abbr[ix+1], 'rate': rate})
             self.flat_period_table.period_rows.append(row)
             self.flat_period_table.add_widget(row)
-        
+
         # Time-of-use demand rate per period.
         for ix, demand_rate in enumerate(tou_demand_rates, start=0):
             try:
@@ -735,7 +739,7 @@ class RateStructureDemandRateStructureScreen(Screen):
 
         # Get period/rates from table.
         tou_rates_dict = self.tou_period_table.get_rates()
-        periods = set([int(period) for period in tou_rates_dict.keys()])
+        periods = {int(period) for period in tou_rates_dict.keys()}
 
         # Determine if any values in schedule are not in period list.
         weekday_periods = set(np.unique(weekday_schedule))
@@ -750,9 +754,9 @@ class RateStructureDemandRateStructureScreen(Screen):
             set_diff = ', '.join(['{:d}'.format(int(x)) for x in sorted(weekend_periods.difference(periods))])
 
             raise(InputError('Impermissible entries ({0}) in the Weekend Rate Schedule found.'.format(set_diff)))
-        
+
         flat_rates_dict = self.flat_period_table.get_rates()
-        
+
         return weekday_schedule, weekend_schedule, tou_rates_dict, flat_rates_dict
     
     def get_selections(self):
@@ -857,7 +861,7 @@ class RateStructureFinishScreen(Screen):
 
         # Form dictionary object for saving.
         rate_structure_object = {}
-        
+
         if not self.save_name_field.text:
             popup = WarningPopup()
             popup.popup_text.text = 'Please specify a name to save the rate structure as.'
@@ -903,16 +907,16 @@ class RateStructureFinishScreen(Screen):
         if not os.path.exists(destination_file):
             with open(destination_file, 'w') as outfile:
                 json.dump(rate_structure_object, outfile)
-            
+
             popup = WarningPopup()
             popup.title = 'Success!'
             popup.popup_text.text = 'Rate structure data successfully saved.'
-            popup.open()
         else:
             # File already exists with same name.
             popup = WarningPopup()
             popup.popup_text.text = 'A rate structure with the provided name already exists. Please specify a new name.'
-            popup.open()
+
+        popup.open()
 
     def next_screen(self):
         self.manager.get_screen(self.manager.next()).reset_screen()
@@ -960,9 +964,7 @@ class RateStructurePeriodTable(GridLayout):
     
     def get_rates(self):
         """Retrieves table data into a dictionary format."""
-        rate_dict = self._validate_inputs()
-
-        return rate_dict
+        return self._validate_inputs()
     
     def copy_text_down(self, instance):
         """Copies the text from the text input to the next row."""
@@ -1035,9 +1037,7 @@ class RateStructureScheduleGrid(GridLayout):
     
     def get_schedule(self):
         """Retrieves the rate schedule inputs into NumPy arrays."""
-        schedule_array = self._validate_inputs()
-
-        return schedule_array
+        return self._validate_inputs()
     
 
 class RateScheduleRow(GridLayout):
@@ -1088,12 +1088,12 @@ class RateScheduleTextInput(TextInput):
         except ValueError:
             return (0, 0, 0, 1)
 
-        if not divmod(int(input_text), 6)[1] or not divmod(int(input_text), 5)[1]:
-            return_color = (1, 1, 1, 1)
-        else:
-            return_color = (0, 0, 0, 1)
-
-        return return_color
+        return (
+            (1, 1, 1, 1)
+            if not divmod(int(input_text), 6)[1]
+            or not divmod(int(input_text), 5)[1]
+            else (0, 0, 0, 1)
+        )
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         key, key_str = keycode
@@ -1109,19 +1109,19 @@ class RateScheduleTextInput(TextInput):
             col_ix = rate_schedule_row.text_inputs.index(self)
             row_ix = rate_schedule_grid.schedule_rows.index(rate_schedule_row)
 
-            if key_str == 'up':
-                next_row_ix = row_ix - 1
-                next_col_ix = col_ix
-            elif key_str == 'down':
+            if key_str == 'down':
                 next_row_ix = 0 if row_ix == n_rows-1 else row_ix + 1
                 next_col_ix = col_ix
             elif key_str == 'left':
-                next_row_ix = row_ix 
+                next_row_ix = row_ix
                 next_col_ix = col_ix - 1
             elif key_str == 'right':
                 next_row_ix = row_ix
                 next_col_ix = 0 if col_ix == n_cols-1 else col_ix + 1
-            
+
+            elif key_str == 'up':
+                next_row_ix = row_ix - 1
+                next_col_ix = col_ix
             # Focus the next specified text input.
             next_text_input = rate_schedule_grid.schedule_rows[next_row_ix].text_inputs[next_col_ix]
             next_text_input.focus = True
@@ -1130,5 +1130,5 @@ class RateScheduleTextInput(TextInput):
             super(RateScheduleTextInput, self).keyboard_on_key_down(window, tab_keycode, text, modifiers)
         else:
             super(RateScheduleTextInput, self).keyboard_on_key_down(window, keycode, text, modifiers)
-        
+
         return True

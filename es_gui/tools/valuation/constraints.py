@@ -604,7 +604,7 @@ def eq_stateofcharge_initial(m):
     mp = m.parent_block()
 
     def _eq_stateofcharge_initial(_m, t):
-        if not t == 0:
+        if t != 0:
             return Constraint.Skip
         else:
             return mp.s[t] == mp.State_of_charge_init*mp.Energy_capacity
@@ -616,11 +616,11 @@ def eq_stateofcharge_final(m):
     mp = m.parent_block()
 
     def _eq_stateofcharge_final(_m, t):
-        if not t == mp.soc_time[-1]:
+        if t != mp.soc_time[-1]:
             return Constraint.Skip
         else:
             return mp.s[t] == mp.State_of_charge_init*mp.Energy_capacity
-        
+
     m.stateofcharge_final = Constraint(mp.soc_time, rule=_eq_stateofcharge_final)
 
 

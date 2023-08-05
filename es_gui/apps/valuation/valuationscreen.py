@@ -56,7 +56,7 @@ class ValuationScreen(Screen):
         try:
             requests = self._generate_requests()
         except InputError as e:
-            logging.error('ValuationExecute: ' + str(e))
+            logging.error(f'ValuationExecute: {str(e)}')
 
             popup = WarningPopup()
             popup.popup_text.text = str(e)
@@ -80,35 +80,23 @@ class ValuationScreen(Screen):
         """
         Opens the popup/screen for executing a valuation optimization routine.
         """
-        #if self.op.price_electricity is not None:
-        if True:
-            self.pw.open()
-        else:
-            # Optimizer LMP attribute is still its initialized None value.
-            # TODO: Better way to check if data has been loaded?
-
-            popup = WarningPopup()
-            popup.popup_text.text = 'No data currently loaded. Please load data first!'
-            popup.open()
+        self.pw.open()
 
     def save_run(self, name, iso, dtype, year, month, node, op=None):
         from datetime import datetime
 
         time_finished = datetime.now().strftime('%A, %B %d, %Y %H:%M:%S')
 
-        results_dict = {}
-        results_dict['name'] = name
-        if op is None:
-            results_dict['op'] = self.op
-        else:
-            results_dict['op'] = op
-        results_dict['iso'] = iso
-        results_dict['data_type'] = dtype
-        results_dict['year'] = year
-        results_dict['month'] = month
-        results_dict['node'] = node
-        results_dict['time'] = time_finished
-
+        results_dict = {
+            'name': name,
+            'op': self.op if op is None else op,
+            'iso': iso,
+            'data_type': dtype,
+            'year': year,
+            'month': month,
+            'node': node,
+            'time': time_finished,
+        }
         plot_screen = self.manager.get_screen('valuation_results_viewer')
         rv = plot_screen.run_selector.rv
         rv.data.append(results_dict)

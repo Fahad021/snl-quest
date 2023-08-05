@@ -127,9 +127,7 @@ class ValuationResultsViewer(ResultsViewer):
 
                 ax.set_title(plot_type)
 
-        if plot_type in ['price of electricity (box)']:
-            pass
-        else:
+        if plot_type not in ['price of electricity (box)']:
             ax.legend(bbox_to_anchor=(1.02, 0.5), loc="center left", borderaxespad=0, shadow=False, labelspacing=1.8)
 
         self.plotbox.children[0].draw()
